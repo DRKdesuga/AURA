@@ -1,0 +1,15 @@
+:host { display: block; width: 100%; }
+
+.field {
+  width: 100%;
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #161926;
+    border: 1px solid rgba(255,255,255,.08);
+    color: #e8ecff;
+    outline: none;
+  }
+  input::placeholder { color: #8c92b3; }
+}

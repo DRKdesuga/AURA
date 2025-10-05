@@ -1,1 +1,24 @@
-<p>chat-thread works!</p>
+<ng-container *ngIf="messages?.length && messages.length > 0; else emptyState">
+  <div class="thread">
+    <app-chat-bubble *ngFor="let m of messages" [message]="m"></app-chat-bubble>
+
+    <!-- Typing indicator -->
+    <div class="row assistant typing" *ngIf="typing">
+      <app-orb-icon class="avatar" [size]="22" [animate]="true"></app-orb-icon>
+      <div class="bubble typing-bubble">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #emptyState>
+  <div class="empty">
+    <app-orb-icon [size]="72" [animate]="true"></app-orb-icon>
+    <h2>Welcome to AURA</h2>
+    <p>
+      I'm your AI assistant, ready to help with any questions or tasks you have.
+      How can I assist you today?
+    </p>
+  </div>
+</ng-template>

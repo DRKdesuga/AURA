@@ -1,0 +1,10 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f111a;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: Inter, Poppins, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  color: #e9edff;
+}

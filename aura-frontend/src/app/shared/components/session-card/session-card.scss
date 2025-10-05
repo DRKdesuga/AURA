@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+
+.card {
+  display: grid;
+  row-gap: 6px;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  background: #141826;
+  color: #dbe1ff;
+  border: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+
+.title {
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.preview {
+  font-size: 12px;
+  opacity: .8;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+
+.meta {
+  font-size: 11px;
+  opacity: .55;
+}
+
+
+.card:hover {
+  border-color: rgba(111,157,255,.30);
+}
