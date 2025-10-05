@@ -1,0 +1,59 @@
+# Backend - Java / Spring Boot
+target/
+*.class
+*.war
+*.ear
+*.jar
+*.iml
+*.log
+*.hprof
+*.DS_Store
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+.idea/
+*.iws
+out/
+.settings/
+.project
+.classpath
+*.swp
+
+# Backend
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Frontend - Angular
+node_modules/
+dist/
+tmp/
+out-tsc/
+.angular/
+.angular-cache/
+coverage/
+*.tsbuildinfo
+
+# OS / IDE
+*.log
+*.swp
+*.swo
+*.swn
+*.swa
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Env
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.der
+*.p12
+secrets/
+
