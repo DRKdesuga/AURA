@@ -1,1 +1,8 @@
-<p>text-input works!</p>
+<div class="field">
+  <input
+    [type]="type"
+    [placeholder]="placeholder"
+    [value]="value"
+    (input)="onInput($any($event.target).value)"
+    (keydown.enter)="onEnter()" />
+</div>

@@ -1,1 +1,15 @@
-<p>sessions-sidebar works!</p>
+<div class="top">
+  <app-ui-button (click)="onCreate()">+ New Chat</app-ui-button>
+  <app-text-input
+    placeholder="Search conversations…"
+    [value]="query()"
+    (valueChange)="query.set($event)"
+    (enter)="onSearchEnter()"></app-text-input>
+</div>
+
+<div class="list" *ngIf="page() as p">
+  <app-session-card
+    *ngFor="let s of p.items"
+    [data]="s"
+    (select)="selectSession.emit(s.sessionId)"></app-session-card>
+</div>

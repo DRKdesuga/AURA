@@ -1,1 +1,5 @@
-<p>session-card works!</p>
+<div class="card" (click)="select.emit()">
+  <div class="title">{{ data.title || 'New chat' }}</div>
+  <div class="preview">{{ data.preview || 'No messages yet' }}</div>
+  <div class="meta">{{ data.lastMessageAt ? (data.lastMessageAt | date:'short') : '' }}</div>
+</div>

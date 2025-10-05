@@ -1,1 +1,13 @@
-<p>aura-shell works!</p>
+<div class="shell">
+  <aside class="sidebar">
+    <app-sessions-sidebar
+      (selectSession)="onSelectSession($event)"
+      (newSession)="onNewSession($event)"></app-sessions-sidebar>
+  </aside>
+
+  <main class="main">
+    <app-chat-header></app-chat-header>
+    <app-chat-thread [messages]="messages()" [typing]="typing()"></app-chat-thread>
+    <app-chat-input (send)="onSendMessage($event)"></app-chat-input>
+  </main>
+</div>

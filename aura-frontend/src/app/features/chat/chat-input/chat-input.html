@@ -1,1 +1,14 @@
-<p>chat-input works!</p>
+<form class="bar" (ngSubmit)="onSubmit()">
+  <input
+    type="text"
+    [disabled]="disabled"
+    [ngModel]="valueSig()"
+    (ngModelChange)="valueSig.set($event)"
+    name="msg"
+    placeholder="Send a message…"/>
+  <button
+    type="submit"
+    [disabled]="!ready()"
+    [class.glow]="ready()"
+    aria-label="Send">➤</button>
+</form>
