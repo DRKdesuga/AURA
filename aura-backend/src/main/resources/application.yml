@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aura_db
+    username: aura
+    password: aura_pwd
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    org.hibernate.SQL: off
+
+ollama:
+  base-url: http://localhost:11434
+  model: llama3.2
+  system-prompt: >
+    You are AURA, the internal assistant. Answer concisely and clearly in English.
+    If you are unsure about something, say so explicitly.
