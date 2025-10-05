@@ -6,16 +6,15 @@
   color: #e9edff;
 }
 
+
 .sidebar {
   display: flex;
   flex-direction: column;
-  width: 320px;          /* verrouille la largeur */
-  min-width: 320px;
-  max-width: 320px;
+  width: 320px; min-width: 320px; max-width: 320px;
   border-right: 1px solid rgba(255,255,255,.06);
   padding: 14px;
-  overflow-y: auto;      /* uniquement vertical */
-  overflow-x: hidden;    /* pas de débordement horizontal */
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #0f111a;
 }
 
