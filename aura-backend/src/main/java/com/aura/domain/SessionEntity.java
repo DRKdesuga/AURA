@@ -24,6 +24,9 @@ public class SessionEntity {
     @Column(name = "date_fin")
     private Instant endDate;
 
+    @Column(name = "title", length = 200)
+    private String title;
+
     @PrePersist
     void onCreate() {
         if (startDate == null) startDate = Instant.now();
