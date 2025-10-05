@@ -2,12 +2,15 @@ package com.aura.controller;
 
 import com.aura.dto.ChatRequestDTO;
 import com.aura.dto.ChatResponseDTO;
+import com.aura.dto.MessageDTO;
 import com.aura.repository.SessionRepository;
 import com.aura.service.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -32,5 +35,13 @@ public class ChatController {
     @GetMapping("/session/{id}/exists")
     public ResponseEntity<Boolean> sessionExists(@PathVariable Long id) {
         return ResponseEntity.ok(sessionRepository.existsById(id));
+    }
+
+    /**
+     * Returns all messages for a session ordered by timestamp ascending.
+     */
+    @GetMapping("/session/{id}/messages")
+    public ResponseEntity<List<MessageDTO>> getMessages(@PathVariable Long id) {
+        return ResponseEntity.ok(chatService.getMessages(id));
     }
 }
