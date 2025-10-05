@@ -7,6 +7,7 @@ import com.aura.domain.MessageEntity;
 import com.aura.domain.SessionEntity;
 import com.aura.dto.ChatRequestDTO;
 import com.aura.dto.ChatResponseDTO;
+import com.aura.dto.MessageDTO;
 import com.aura.error.AuraErrorCode;
 import com.aura.error.AuraException;
 import com.aura.repository.MessageRepository;
@@ -14,6 +15,8 @@ import com.aura.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -57,5 +60,23 @@ public class ChatService {
                 .timestamp(botMsg.getTimestamp())
                 .newSession(newSession)
                 .build();
+    }
+
+    /**
+     * Returns all messages for a session ordered by timestamp ascending.
+     */
+    @Transactional(readOnly = true)
+    public List<MessageDTO> getMessages(Long sessionId) {
+        SessionEntity session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AuraException(AuraErrorCode.SESSION_NOT_FOUND, "Session not found: " + sessionId));
+
+        return messageRepository.findBySessionOrderByTimestampAsc(session).stream()
+                .map(m -> MessageDTO.builder()
+                        .id(m.getId())
+                        .author(m.getAuthor().name())
+                        .content(m.getContent())
+                        .timestamp(m.getTimestamp())
+                        .build())
+                .toList();
     }
 }
