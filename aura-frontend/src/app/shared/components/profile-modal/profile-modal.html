@@ -1,0 +1,45 @@
+<div class="overlay" *ngIf="open" (click)="close.emit()"></div>
+
+<div class="modal" *ngIf="open" role="dialog" aria-modal="true" aria-label="Profile settings">
+  <header>
+    <h3>Profile</h3>
+    <button class="icon" type="button" (click)="close.emit()" aria-label="Close">✕</button>
+  </header>
+
+  <section class="preview">
+    <div class="preview-avatar" [style.--aura-color]="color()">
+      <img [src]="selected()" alt="Preview"/>
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="row">
+      <label>Aura color</label>
+      <input type="color" [value]="color()" (input)="color.set(($any($event.target)).value)" />
+    </div>
+
+    <div class="row">
+      <label>Avatar</label>
+      <div class="grid">
+        <button type="button"
+                *ngFor="let p of presets"
+                class="pick"
+                [class.active]="selected()===p"
+                (click)="selected.set(p)">
+          <img [src]="p" alt="avatar option"/>
+        </button>
+
+        <input id="fileUp" type="file" accept="image/*" (change)="onFile($event)" hidden>
+        <button type="button" class="pick upload" (click)="document.getElementById('fileUp')?.click()">
+          ⬆
+        </button>
+      </div>
+      <small class="hint">You can upload a square image; it will be stored locally in your browser.</small>
+    </div>
+  </section>
+
+  <footer>
+    <button class="btn ghost" type="button" (click)="close.emit()">Cancel</button>
+    <button class="btn primary" type="button" (click)="onSave()">Save</button>
+  </footer>
+</div>
