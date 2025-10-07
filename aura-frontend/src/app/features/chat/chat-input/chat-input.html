@@ -1,13 +1,19 @@
 <div class="dock">
   <form class="composer" (ngSubmit)="onSubmit()">
-    <input
+    <textarea
+      #ta
       class="text"
-      type="text"
+      rows="1"
+      name="message"
+      [ngModelOptions]="{ standalone: true }"
       [disabled]="disabled"
       [ngModel]="valueSig()"
-      (ngModelChange)="valueSig.set($event)"
-      name="msg"
-      placeholder="Send a message…"/>
+      (ngModelChange)="onType($event)"
+      (input)="onInput()"
+      (keydown)="onKeyDown($any($event))"
+      (keyup.enter)="onEnterKey($any($event))"
+      placeholder="Send a message…"></textarea>
+
     <button
       class="send"
       type="submit"
