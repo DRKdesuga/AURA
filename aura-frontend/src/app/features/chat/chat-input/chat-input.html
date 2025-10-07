@@ -1,14 +1,18 @@
-<form class="bar" (ngSubmit)="onSubmit()">
-  <input
-    type="text"
-    [disabled]="disabled"
-    [ngModel]="valueSig()"
-    (ngModelChange)="valueSig.set($event)"
-    name="msg"
-    placeholder="Send a message…"/>
-  <button
-    type="submit"
-    [disabled]="!ready()"
-    [class.glow]="ready()"
-    aria-label="Send">➤</button>
-</form>
+<div class="dock">
+  <form class="composer" (ngSubmit)="onSubmit()">
+    <input
+      class="text"
+      type="text"
+      [disabled]="disabled"
+      [ngModel]="valueSig()"
+      (ngModelChange)="valueSig.set($event)"
+      name="msg"
+      placeholder="Send a message…"/>
+    <button
+      class="send"
+      type="submit"
+      [disabled]="!ready()"
+      [class.glow]="ready()"
+      aria-label="Send">➤</button>
+  </form>
+</div>
