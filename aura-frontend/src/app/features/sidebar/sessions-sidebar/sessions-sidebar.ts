@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import {Component, EventEmitter, OnInit, Output, signal} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SessionsService } from '../../../core/services/sessions/sessions';
 import { SessionsPage } from '../../../core/models/sessions-page.model';
@@ -13,37 +13,36 @@ import { TextInput } from '../../../shared/components/text-input/text-input';
   templateUrl: './sessions-sidebar.html',
   styleUrl: './sessions-sidebar.scss'
 })
-export class SessionsSidebar {
+export class SessionsSidebar implements OnInit{
   @Output() selectSession = new EventEmitter<number>();
-  @Output() newSession = new EventEmitter<number>();
+  @Output() newDraft = new EventEmitter<void>(); // no DB creation here
 
   query = signal('');
-  page = signal<SessionsPage | null>(null);
-  loading = signal(false);
+  page = signal<{ items: SessionsPage['items'] }>({ items: [] });
 
-  constructor(private readonly sessions: SessionsService) {
-    this.refresh();
-  }
+  constructor(private readonly sessions: SessionsService) {}
+
+  ngOnInit() { this.refresh(); }
 
   refresh() {
-    this.loading.set(true);
-    this.sessions.list(this.query(), 0, 30).subscribe({
-      next: p => { this.page.set(p); this.loading.set(false); },
-      error: () => this.loading.set(false)
+    this.sessions.list(this.query(), 0, 50).subscribe({
+      next: (pg) => {
+        const filtered = pg.items.filter(it => (it.preview ?? '').trim().length > 0);
+        this.page.set({ items: filtered });
+      }
     });
   }
 
   onCreate() {
-    this.sessions.create('New chat').subscribe(res => {
-      type CreateRes = { sessionId: number; title?: string | null };
-      const { sessionId } = res as CreateRes;
-      if (typeof sessionId === 'number') {
-        this.newSession.emit(sessionId);
-      }
-      this.refresh();
-    });
+    this.newDraft.emit();
   }
 
+  onSearch(val: string) {
+    this.query.set(val);
+    this.refresh();
+  }
 
-  onSearchEnter() { this.refresh(); }
+  onSearchEnter() {
+    this.refresh();
+  }
 }

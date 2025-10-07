@@ -2,7 +2,8 @@
   <aside class="sidebar">
     <app-sessions-sidebar
       (selectSession)="onSelectSession($event)"
-      (newSession)="onNewSession($event)"></app-sessions-sidebar>
+      (newDraft)="onNewDraft()">
+    </app-sessions-sidebar>
   </aside>
 
   <main class="main">
