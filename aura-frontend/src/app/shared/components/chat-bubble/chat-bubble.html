@@ -1,5 +1,8 @@
-<div class="row" [class.user]="message.author==='USER'" [class.assistant]="message.author==='ASSISTANT'">
-  <ng-container *ngIf="message.author==='ASSISTANT'; else userAvatar">
+<div class="row"
+     [class.user]="message?.author === 'USER'"
+     [class.assistant]="message?.author === 'ASSISTANT'">
+
+  <ng-container *ngIf="message?.author === 'ASSISTANT'; else userAvatar">
     <app-orb-icon class="avatar" [size]="22" [animate]="true"></app-orb-icon>
   </ng-container>
   <ng-template #userAvatar>
@@ -7,7 +10,6 @@
   </ng-template>
 
   <div class="bubble">
-    <div class="content">{{ message.content }}</div>
-    <div class="ts">{{ message.timestamp | date:'short' }}</div>
+    <app-markdown-viewer [content]="message?.content || ''"></app-markdown-viewer>
   </div>
 </div>
