@@ -1,0 +1,60 @@
+.md { line-height: 1.55; word-wrap: break-word; }
+.md h1, .md h2, .md h3 { margin: 0.7rem 0 0.45rem; font-weight: 600; }
+.md p, .md ul, .md ol   { margin: .4rem 0; color: #e8ecff; }
+.md a { color: #6f9dff; text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+
+.md code {
+  background: rgba(255,255,255,0.06);
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+}
+
+/* Code blocks — rounded, with floating copy button */
+.md pre {
+  position: relative;
+  margin: .65rem 0;
+  background: transparent;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+
+.md pre code,
+.md pre code.hljs {
+  display: block;
+  padding: .85rem 1rem .95rem 1rem;
+  border-radius: 14px !important;
+  overflow: auto;
+  background: #0f111a !important; /* under hljs colors */
+}
+
+/* Copy button (top-right) */
+.md .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(90,79,255,.35), rgba(111,157,255,.35));
+  color: #eef2ff;
+  cursor: pointer;
+  backdrop-filter: blur(3px);
+  transition: background .2s ease, transform .1s ease, border-color .2s ease;
+}
+.md .copy-btn:hover {
+  background: linear-gradient(135deg, rgba(90,79,255,.48), rgba(111,157,255,.48));
+  border-color: rgba(255,255,255,.28);
+}
+.md .copy-btn:active { transform: translateY(1px); }
+
+.md ul, .md ol { padding-left: 1.25rem; }
+.md li + li { margin-top: .25rem; }
+.md table { border-collapse: collapse; width: 100%; }
+.md th, .md td { border: 1px solid rgba(255,255,255,0.08); padding: .5rem .6rem; }
+.md th { background: rgba(255,255,255,0.05); }
+
+@media (prefers-reduced-motion: reduce) { .md .copy-btn { transition: none; } }
