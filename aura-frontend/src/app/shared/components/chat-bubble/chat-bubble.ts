@@ -7,7 +7,7 @@ import { MarkdownViewer } from '../markdown-viewer/markdown-viewer';
 @Component({
   selector: 'app-chat-bubble',
   standalone: true,
-  imports: [CommonModule, OrbIcon, MarkdownViewer],
+  imports: [CommonModule, OrbIcon, MarkdownViewer, MarkdownViewer],
   templateUrl: './chat-bubble.html',
   styleUrl: './chat-bubble.scss'
 })

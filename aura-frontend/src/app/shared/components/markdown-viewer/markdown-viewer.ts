@@ -50,10 +50,20 @@ export class MarkdownViewer implements OnChanges {
     queueMicrotask(() => this.attachCopyButtons());
   }
 
-  /** Adds a floating "Copy" button to each <pre> block (top-right). */
   private attachCopyButtons() {
     const root = this.host.nativeElement.querySelector('.md');
     if (!root) return;
+
+    const copyIcon = () => `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path fill="currentColor"
+        d="M16 1H6a2 2 0 0 0-2 2v12h2V3h10V1zm3 4H10a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H10V7h9v14z"/>
+    </svg>`;
+    const checkIcon = () => `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path fill="currentColor"
+        d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>
+    </svg>`;
 
     const blocks = root.querySelectorAll('pre');
     blocks.forEach((pre) => {
@@ -64,24 +74,28 @@ export class MarkdownViewer implements OnChanges {
       const btn = document.createElement('button');
       btn.className = 'copy-btn';
       btn.type = 'button';
-      btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy code');
+      btn.setAttribute('title', 'Copy code');
+      btn.innerHTML = copyIcon();                
 
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const code = preEl.querySelector('code')?.textContent ?? '';
         try {
           await navigator.clipboard.writeText(code);
-          const old = btn.textContent;
-          btn.textContent = 'Copied';
-          setTimeout(() => (btn.textContent = old || 'Copy'), 1200);
+          btn.classList.add('ok');
+          const old = btn.innerHTML;
+          btn.innerHTML = checkIcon();
+          setTimeout(() => {
+            btn.classList.remove('ok');
+            btn.innerHTML = old;
+          }, 1200);
         } catch {
-          const old = btn.textContent;
-          btn.textContent = 'Failed';
-          setTimeout(() => (btn.textContent = old || 'Copy'), 1200);
         }
       });
 
       preEl.appendChild(btn);
     });
   }
+
 }
