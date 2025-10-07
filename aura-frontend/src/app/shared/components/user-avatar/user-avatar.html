@@ -1,0 +1,17 @@
+<ng-container *ngIf="clickable; else ro">
+  <button class="avatar"
+          type="button"
+          (click)="open.emit()"
+          [style.--aura-color]="prefs.auraColor()"
+          [style.--sz.px]="size">
+    <img [src]="prefs.avatarUrl()" alt="User avatar" />
+  </button>
+</ng-container>
+
+<ng-template #ro>
+  <div class="avatar ro"
+       [style.--aura-color]="prefs.auraColor()"
+       [style.--sz.px]="size">
+    <img [src]="prefs.avatarUrl()" alt="User avatar" />
+  </div>
+</ng-template>

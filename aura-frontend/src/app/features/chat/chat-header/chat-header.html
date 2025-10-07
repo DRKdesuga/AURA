@@ -1,7 +1,15 @@
-<div class="header">
-  <app-orb-icon [size]="40" [animate]="true"></app-orb-icon>
-  <div class="title">
-    <div class="name">AURA</div>
-    <div class="sub">AI Assistant</div>
+<div class="bar">
+  <div class="left">
+    <app-orb-icon [size]="18" [animate]="true"></app-orb-icon>
+    <div class="meta">
+      <div class="title">AURA</div>
+      <div class="subtitle">AI Assistant</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <app-user-avatar (open)="showProfile.set(true)"></app-user-avatar>
   </div>
 </div>
+
+<app-profile-modal [open]="showProfile()" (close)="showProfile.set(false)"></app-profile-modal>

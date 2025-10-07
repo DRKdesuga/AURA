@@ -1,15 +1,15 @@
 <div class="row"
-     [class.user]="message?.author === 'USER'"
-     [class.assistant]="message?.author === 'ASSISTANT'">
+     [class.user]="message.author === 'USER'"
+     [class.assistant]="message.author === 'ASSISTANT'">
 
-  <ng-container *ngIf="message?.author === 'ASSISTANT'; else userAvatar">
+  <ng-container *ngIf="message.author === 'ASSISTANT'; else userSide">
     <app-orb-icon class="avatar" [size]="22" [animate]="true"></app-orb-icon>
   </ng-container>
-  <ng-template #userAvatar>
-    <div class="avatar user">🧑‍💻</div>
+  <ng-template #userSide>
+    <app-user-avatar class="avatar" [size]="22" [clickable]="false"></app-user-avatar>
   </ng-template>
 
   <div class="bubble">
-    <app-markdown-viewer [content]="message?.content || ''"></app-markdown-viewer>
+    <app-markdown-viewer [content]="message.content"></app-markdown-viewer>
   </div>
 </div>
