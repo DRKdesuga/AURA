@@ -1,4 +1,4 @@
-import {Component, EventEmitter, OnInit, Output, signal} from '@angular/core';
+import {Component, EventEmitter, Output, signal, effect, Injector, inject, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SessionsService } from '../../../core/services/sessions/sessions';
 import { SessionsPage } from '../../../core/models/sessions-page.model';
@@ -15,34 +15,51 @@ import { TextInput } from '../../../shared/components/text-input/text-input';
 })
 export class SessionsSidebar implements OnInit{
   @Output() selectSession = new EventEmitter<number>();
-  @Output() newDraft = new EventEmitter<void>(); // no DB creation here
+  @Output() newDraft = new EventEmitter<void>();
 
-  query = signal('');
-  page = signal<{ items: SessionsPage['items'] }>({ items: [] });
 
-  constructor(private readonly sessions: SessionsService) {}
+  query = signal<string>('');
 
-  ngOnInit() { this.refresh(); }
+  all = signal<SessionsPage['items']>([]);
+  page = signal<Pick<SessionsPage, 'items'>>({ items: [] });
 
-  refresh() {
-    this.sessions.list(this.query(), 0, 50).subscribe({
-      next: (pg) => {
-        const filtered = pg.items.filter(it => (it.preview ?? '').trim().length > 0);
-        this.page.set({ items: filtered });
-      }
+  private injector = inject(Injector);
+
+  constructor(private readonly sessions: SessionsService) {
+    effect(() => {
+      const q = this.normalize(this.query().trim());
+      const base = this.all().filter(it => (it.preview ?? '').trim().length > 0);
+
+      const filtered = q
+        ? base.filter(it => this.normalize(it.title || 'New chat').startsWith(q))
+        : base;
+
+      this.page.set({ items: filtered });
+    }, { injector: this.injector });
+  }
+
+  ngOnInit(): void {
+    this.refresh();
+  }
+
+  refresh(): void {
+    this.sessions.list('', 0, 100).subscribe({
+      next: pg => this.all.set(pg.items),
     });
   }
 
-  onCreate() {
+  onCreate(): void {
     this.newDraft.emit();
   }
 
-  onSearch(val: string) {
-    this.query.set(val);
+  onSearchEnter(): void {
     this.refresh();
   }
 
-  onSearchEnter() {
-    this.refresh();
+  private normalize(s: string): string {
+    return s
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
   }
 }
