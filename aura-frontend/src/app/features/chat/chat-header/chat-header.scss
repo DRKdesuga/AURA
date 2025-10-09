@@ -1,11 +1,32 @@
 .header { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
 .name { font-weight: 700; letter-spacing: .6px; }
-.sub { font-size: 12px; opacity: .7; }
+
 .bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
+
 .left { display: flex; align-items: center; gap: 10px; }
 .meta .title { font-weight: 600; }
 .meta .subtitle { font-size: 12px; color: #b9c2e8; }
-.right { display: flex; align-items: center; gap: 12px; }
+
+.right { display: flex; align-items: center; gap: 10px; }
+
+/* bouton d’icône sans fond */
+.icon-btn {
+  appearance: none;
+  border: 0;
+  background: transparent; /* pas de fond */
+  color: #cfd8ff;
+  padding: 6px;
+  line-height: 0;
+  border-radius: 10px; /* pour un léger focus ring */
+  cursor: pointer;
+  transition: transform .08s ease, color .2s ease, box-shadow .2s ease;
+}
+.icon-btn:hover { color: #eaf0ff; transform: translateY(-1px); }
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(111,157,255,.35);
+}
