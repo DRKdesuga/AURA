@@ -194,6 +194,7 @@ curl -s "http://localhost:8080/api/sessions?q=&page=0&size=30" | jq
 
 ![Sample Output](README_SRC/non_conf.png)
 ![Sample Output](README_SRC/conf.png)
+![Sample Output](README_SRC/math.png)
 
 ## 👨‍💻 Author
 
