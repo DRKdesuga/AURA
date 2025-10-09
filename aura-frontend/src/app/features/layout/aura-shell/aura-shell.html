@@ -1,4 +1,4 @@
-<div class="shell">
+<div class="shell" [class.collapsed]="sidebarHidden()">
   <aside class="sidebar">
     <app-sessions-sidebar
       (selectSession)="onSelectSession($event)"
@@ -7,8 +7,16 @@
   </aside>
 
   <main class="main">
-    <app-chat-header></app-chat-header>
-    <app-chat-thread [messages]="messages()" [typing]="typing()"></app-chat-thread>
+    <app-chat-header
+      [sidebarHidden]="sidebarHidden()"
+      (toggleSidebar)="toggleSidebar()">
+    </app-chat-header>
+
+    <app-chat-thread
+      [messages]="messages()"
+      [typing]="typing()">
+    </app-chat-thread>
+
     <app-chat-input (send)="onSendMessage($event)"></app-chat-input>
   </main>
 </div>

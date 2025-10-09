@@ -17,12 +17,15 @@ import { ChatService } from '../../../core/services/chat/chat';
 export class AuraShell {
   @ViewChild(SessionsSidebar) sidebar?: SessionsSidebar;
 
+  sidebarHidden = signal(false);
   sessionId = signal<number | null>(null);
   messages = signal<Message[]>([]);
   typing = signal(false);
   private queue: string[] = [];
 
   constructor(private readonly chat: ChatService) {}
+
+  toggleSidebar() { this.sidebarHidden.update(v => !v); }
 
   onSelectSession(id: number) {
     this.sessionId.set(id);
@@ -48,7 +51,7 @@ export class AuraShell {
       return;
     }
 
-    const wasNew = this.sessionId() == null; // snapshot before sending
+    const wasNew = this.sessionId() == null;
     this.typing.set(true);
 
     this.chat.chat({ sessionId: this.sessionId(), message: text }).subscribe({
@@ -57,10 +60,7 @@ export class AuraShell {
         this.messages.update(arr => arr.concat([
           { id: res.assistantMessageId, author: 'ASSISTANT', content: res.assistantReply, timestamp: res.timestamp }
         ]));
-
-        // Now that a real session exists with at least one message, update the sidebar.
         if (wasNew) this.sidebar?.refresh();
-
         this.processQueue();
       },
       error: () => { this.typing.set(false); }
