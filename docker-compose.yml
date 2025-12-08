@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: aura_db
+      POSTGRES_USER: aura
+      POSTGRES_PASSWORD: aura_pwd
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./aura-backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/aura_db
+      SPRING_DATASOURCE_USERNAME: aura
+      SPRING_DATASOURCE_PASSWORD: aura_pwd
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2
+    depends_on:
+      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./aura-frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+
+volumes:
+  db-data:

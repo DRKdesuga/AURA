@@ -32,13 +32,10 @@ ORDER BY m.horodatage DESC
 LIMIT 50;
 
 
--- EN: Delete ONE session (messages deleted via ON DELETE CASCADE)
 DELETE FROM sessions WHERE session_id = :id;
 
 
--- EN: Wipe ALL data and reset sequence ids
 TRUNCATE TABLE sessions RESTART IDENTITY CASCADE;
 
 
--- EN: Wipe only messages, keep sessions
 TRUNCATE TABLE messages RESTART IDENTITY;

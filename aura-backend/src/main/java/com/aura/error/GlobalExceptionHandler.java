@@ -1,10 +1,12 @@
 package com.aura.error;
 
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 import java.time.Instant;
 
 @RestControllerAdvice
@@ -13,7 +15,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getAllErrors().stream()
-                .findFirst().map(e -> e.getDefaultMessage()).orElse("Invalid request");
+                .findFirst().map(DefaultMessageSourceResolvable::getDefaultMessage).orElse("Invalid request");
         ErrorResponse body = ErrorResponse.builder()
                 .code(AuraErrorCode.VALIDATION_ERROR.name())
                 .message(msg)
