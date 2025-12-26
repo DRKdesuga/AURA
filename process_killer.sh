@@ -71,17 +71,14 @@ kill_by_pattern() {
   fi
 }
 
-# 1) Kill processes started by run_local.sh (PID files)
 kill_pid_file "$LOG_DIR/backend.pid"
 kill_pid_file "$LOG_DIR/frontend.pid"
 kill_pid_file "$LOG_DIR/ollama.pid"
 
-# 2) Kill by well-known ports
-kill_by_port 8080   # backend
-kill_by_port 4200   # frontend (Angular dev server)
-kill_by_port 11434  # ollama
+kill_by_port 8080   
+kill_by_port 4200   
+kill_by_port 11434 
 
-# 3) Kill by common patterns (best-effort)
 kill_by_pattern "ollama serve"
 kill_by_pattern "mvn .*spring-boot:run"
 kill_by_pattern "ng serve"

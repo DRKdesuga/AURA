@@ -4,6 +4,7 @@ import com.aura.dto.ChatRequestDTO;
 import com.aura.dto.ChatResponseDTO;
 import com.aura.dto.MessageDTO;
 import com.aura.repository.SessionRepository;
+import com.aura.security.CurrentUserProvider;
 import com.aura.service.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class ChatController {
 
     private final ChatService chatService;
     private final SessionRepository sessionRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * Handles a chat request and returns the assistant reply with session context.
@@ -34,7 +36,11 @@ public class ChatController {
      */
     @GetMapping("/session/{id}/exists")
     public ResponseEntity<Boolean> sessionExists(@PathVariable Long id) {
-        return ResponseEntity.ok(sessionRepository.existsById(id));
+        var principal = currentUserProvider.require();
+        boolean exists = principal.isAdmin()
+                ? sessionRepository.existsById(id)
+                : sessionRepository.findByIdAndUser_Id(id, principal.id()).isPresent();
+        return ResponseEntity.ok(exists);
     }
 
     /**

@@ -10,7 +10,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "messages")
+@Table(name = "chat_messages")
 public class MessageEntity {
 
     @Id

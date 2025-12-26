@@ -1,3 +1,4 @@
+-- Create users, chat_sessions, and chat_messages tables with relationships
 CREATE TABLE IF NOT EXISTS users (
     id            UUID PRIMARY KEY,
     email         VARCHAR(255) NOT NULL UNIQUE,
@@ -30,4 +31,3 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_time
 
 CREATE INDEX IF NOT EXISTS idx_sessions_title_lower ON chat_sessions (LOWER(title));
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON chat_sessions (user_id);
-

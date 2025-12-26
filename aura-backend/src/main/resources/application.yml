@@ -21,6 +21,17 @@ logging:
   level:
     org.hibernate.SQL: off
 
+security:
+  jwt:
+    secret: "riF4Mqq6DU5SdQ/dQMhXKK/rYtoZDo7odgSOFbNY260S0oky/CIHaHzaEaaLnAET"
+    expiration-seconds: 3600
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
 ollama:
   base-url: http://localhost:11434
   model: llama3.2
