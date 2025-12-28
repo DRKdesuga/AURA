@@ -2,7 +2,7 @@
 
 <div class="modal" *ngIf="open" role="dialog" aria-modal="true" aria-label="Profile settings">
   <header>
-    <h3>Profile</h3>
+    <h3>Personnalisation</h3>
     <button class="icon" type="button" (click)="close.emit()" aria-label="Close">✕</button>
   </header>
 
@@ -36,6 +36,18 @@
       </div>
       <small class="hint">You can upload a square image; it will be stored locally in your browser.</small>
     </div>
+  </section>
+
+  <section class="danger-zone">
+    <h4>Session</h4>
+    <p>Déconnectez-vous de cet appareil en toute sécurité.</p>
+    <button
+      class="btn danger"
+      type="button"
+      (click)="onLogout()"
+      [disabled]="loggingOut()">
+      {{ loggingOut() ? 'Déconnexion...' : 'Déconnexion' }}
+    </button>
   </section>
 
   <footer>

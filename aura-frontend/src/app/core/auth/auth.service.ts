@@ -16,12 +16,14 @@ export interface AuthResponse {
   accessToken: string;
   tokenType: string;
   user: AuthUser;
+  refreshToken?: string;
 }
 
 interface AuthState {
   token: string | null;
   user: AuthUser | null;
   validated: boolean;
+  refreshToken: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +33,8 @@ export class AuthService {
   private readonly router = inject(Router);
 
   private readonly storageKey = 'aura.auth.token';
+  private readonly refreshStorageKey = 'aura.auth.refresh';
+  private readonly useCredentials = this.cfg.authUseCredentials ?? false;
   private readonly state = signal<AuthState>(this.loadInitialState());
   private meCheck$?: Observable<boolean>;
 
@@ -39,14 +43,16 @@ export class AuthService {
   readonly accessToken = computed(() => this.state().token);
 
   login(email: string, password: string): Observable<AuthResponse> {
+    const options = this.useCredentials ? { withCredentials: true } : {};
     return this.http
-      .post<AuthResponse>(`${this.cfg.apiBaseUrl}/api/auth/login`, { email, password })
+      .post<AuthResponse>(`${this.cfg.apiBaseUrl}/api/auth/login`, { email, password }, options)
       .pipe(tap(res => this.setAuth(res)));
   }
 
   register(email: string, username: string, password: string): Observable<AuthResponse> {
+    const options = this.useCredentials ? { withCredentials: true } : {};
     return this.http
-      .post<AuthResponse>(`${this.cfg.apiBaseUrl}/api/auth/register`, { email, username, password })
+      .post<AuthResponse>(`${this.cfg.apiBaseUrl}/api/auth/register`, { email, username, password }, options)
       .pipe(tap(res => this.setAuth(res)));
   }
 
@@ -60,14 +66,30 @@ export class AuthService {
     );
   }
 
-  logout(): void {
-    this.clearAuth();
-    void this.router.navigateByUrl('/login');
+  logout(opts?: { skipServer?: boolean }): Observable<void> {
+    const skipServer = opts?.skipServer ?? false;
+    const refreshToken = this.state().refreshToken;
+
+    const body = refreshToken ? { refreshToken } : {};
+    const requestOptions = this.useCredentials ? { withCredentials: true } : {};
+    const request$: Observable<void> = skipServer
+      ? of(void 0)
+      : this.http.post<void>(`${this.cfg.apiBaseUrl}/api/auth/logout`, body, requestOptions);
+
+    return request$.pipe(
+      catchError(() => of(void 0)),
+      finalize(() => {
+        this.clearAuth();
+        void this.router.navigateByUrl('/login');
+      }),
+      map(() => void 0)
+    );
   }
 
   clearAuth(): void {
     this.writeTokenToStorage(null);
-    this.state.set({ token: null, user: null, validated: false });
+    this.writeRefreshTokenToStorage(null);
+    this.state.set({ token: null, user: null, validated: false, refreshToken: null });
   }
 
   hasToken(): boolean {
@@ -92,7 +114,12 @@ export class AuthService {
       catchError(() => {
         const latest = this.state();
         if (latest.token && !latest.validated) {
-          this.state.set({ token: latest.token, user: null, validated: true });
+          this.state.set({
+            token: latest.token,
+            user: null,
+            validated: true,
+            refreshToken: latest.refreshToken
+          });
         }
         return of(false);
       }),
@@ -106,19 +133,32 @@ export class AuthService {
 
   private setAuth(res: AuthResponse): void {
     this.writeTokenToStorage(res.accessToken);
-    this.state.set({ token: res.accessToken, user: res.user, validated: true });
+    const refreshToken = res.refreshToken ?? null;
+    this.writeRefreshTokenToStorage(refreshToken);
+    this.state.set({
+      token: res.accessToken,
+      user: res.user,
+      validated: true,
+      refreshToken
+    });
   }
 
   private setUser(user: AuthUser): void {
     const current = this.state();
-    this.state.set({ token: current.token, user, validated: true });
+    this.state.set({
+      token: current.token,
+      user,
+      validated: true,
+      refreshToken: current.refreshToken
+    });
   }
 
   private loadInitialState(): AuthState {
     return {
       token: this.readTokenFromStorage(),
       user: null,
-      validated: false
+      validated: false,
+      refreshToken: this.readRefreshTokenFromStorage()
     };
   }
 
@@ -136,6 +176,26 @@ export class AuthService {
         sessionStorage.setItem(this.storageKey, token);
       } else {
         sessionStorage.removeItem(this.storageKey);
+      }
+    } catch {
+      // Ignore storage errors (e.g. disabled storage).
+    }
+  }
+
+  private readRefreshTokenFromStorage(): string | null {
+    try {
+      return sessionStorage.getItem(this.refreshStorageKey);
+    } catch {
+      return null;
+    }
+  }
+
+  private writeRefreshTokenToStorage(token: string | null): void {
+    try {
+      if (token) {
+        sessionStorage.setItem(this.refreshStorageKey, token);
+      } else {
+        sessionStorage.removeItem(this.refreshStorageKey);
       }
     } catch {
       // Ignore storage errors (e.g. disabled storage).

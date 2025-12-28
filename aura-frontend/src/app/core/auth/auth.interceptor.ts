@@ -1,6 +1,5 @@
 import { inject } from '@angular/core';
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { APP_CONFIG, AppConfig } from '../../../app.config';
@@ -24,10 +23,10 @@ function isAuthExempt(url: string): boolean {
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const cfg = inject<AppConfig>(APP_CONFIG);
   const auth = inject(AuthService);
-  const router = inject(Router);
 
   const apiRequest = isApiRequest(req.url, cfg.apiBaseUrl);
   const authExempt = isAuthExempt(req.url);
+  const logoutRequest = req.url.includes('/api/auth/logout');
 
   let authReq = req;
   if (apiRequest && !authExempt) {
@@ -41,9 +40,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (apiRequest && !authExempt && err.status === 401) {
-        auth.clearAuth();
-        void router.navigateByUrl('/login');
+      if (apiRequest && !authExempt && !logoutRequest && err.status === 401) {
+        auth.logout({ skipServer: true }).subscribe();
       }
       return throwError(() => err);
     })

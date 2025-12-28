@@ -12,13 +12,15 @@ import { authInterceptor } from './app/core/auth/auth.interceptor';
 
 export interface AppConfig {
   apiBaseUrl: string;
+  authUseCredentials: boolean;
 }
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');
 
 export function provideAppConfig(): Provider[] {
   const cfg: AppConfig = {
-    apiBaseUrl: environment.apiBaseUrl
+    apiBaseUrl: environment.apiBaseUrl,
+    authUseCredentials: environment.authUseCredentials ?? false
   };
   return [{ provide: APP_CONFIG, useValue: cfg }];
 }
