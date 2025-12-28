@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { AuraShell } from './app/features/layout/aura-shell/aura-shell';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [AuraShell],
-  template: `<app-aura-shell></app-aura-shell>`,
+  imports: [RouterOutlet],
+  template: `<router-outlet></router-outlet>`,
   styleUrl: './app.scss'
 })
 export class AppComponent {}

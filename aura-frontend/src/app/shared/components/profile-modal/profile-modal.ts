@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserPreferencesService } from '../../../core/services/user/user-preferences';
+import { AuthService } from '../../../core/auth/auth.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-profile-modal',
@@ -19,8 +21,12 @@ export class ProfileModal {
 
   color = signal<string>('#6f9dff');
   selected = signal<string>('');
+  loggingOut = signal(false);
 
-  constructor(public readonly prefs: UserPreferencesService) {
+  constructor(
+    public readonly prefs: UserPreferencesService,
+    private readonly auth: AuthService
+  ) {
     this.color.set(this.prefs.auraColor());
     this.selected.set(this.prefs.avatarUrl());
   }
@@ -38,6 +44,18 @@ export class ProfileModal {
     const reader = new FileReader();
     reader.onload = () => this.selected.set(String(reader.result)); // data: URL
     reader.readAsDataURL(file);
+  }
+
+  onLogout(): void {
+    if (this.loggingOut()) return;
+    const ok = confirm('Sign out?');
+    if (!ok) return;
+
+    this.loggingOut.set(true);
+    this.auth
+      .logout()
+      .pipe(finalize(() => this.loggingOut.set(false)))
+      .subscribe();
   }
 
   protected readonly document = document;

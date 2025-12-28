@@ -7,6 +7,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+import java.util.UUID;
+
 public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
 
     @Query(
@@ -17,10 +20,10 @@ public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
           lm.last_content AS "preview",
           lm.last_time AS "lastMessageAt",
           lm.message_count AS "messageCount"
-        FROM sessions s
+        FROM chat_sessions s
         LEFT JOIN LATERAL (
           SELECT m.contenu AS first_user_content
-          FROM messages m
+          FROM chat_messages m
           WHERE m.session_id = s.session_id AND m.auteur = 'USER'
           ORDER BY m.horodatage ASC
           LIMIT 1
@@ -30,18 +33,19 @@ public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
                  MAX(m.horodatage) AS last_time,
                  (
                    SELECT m2.contenu
-                   FROM messages m2
+                   FROM chat_messages m2
                    WHERE m2.session_id = s.session_id
                    ORDER BY m2.horodatage DESC
                    LIMIT 1
                  ) AS last_content
-          FROM messages m
+          FROM chat_messages m
           WHERE m.session_id = s.session_id
         ) lm ON true
-        WHERE (:q IS NULL OR :q = '' OR
+        WHERE ((:isAdmin = true) OR s.user_id = :userId)
+          AND (:q IS NULL OR :q = '' OR
                LOWER(COALESCE(s.title, fu.first_user_content, '')) LIKE LOWER(CONCAT('%', :q, '%')) OR
                EXISTS (
-                 SELECT 1 FROM messages m3
+                 SELECT 1 FROM chat_messages m3
                  WHERE m3.session_id = s.session_id
                    AND m3.contenu ILIKE CONCAT('%', :q, '%')
                ))
@@ -49,23 +53,29 @@ public interface SessionRepository extends JpaRepository<SessionEntity, Long> {
         """,
             countQuery = """
         SELECT COUNT(*)::bigint
-        FROM sessions s
+        FROM chat_sessions s
         LEFT JOIN LATERAL (
           SELECT m.contenu AS first_user_content
-          FROM messages m
+          FROM chat_messages m
           WHERE m.session_id = s.session_id AND m.auteur = 'USER'
           ORDER BY m.horodatage ASC
           LIMIT 1
         ) fu ON true
-        WHERE (:q IS NULL OR :q = '' OR
+        WHERE ((:isAdmin = true) OR s.user_id = :userId)
+          AND (:q IS NULL OR :q = '' OR
                LOWER(COALESCE(s.title, fu.first_user_content, '')) LIKE LOWER(CONCAT('%', :q, '%')) OR
                EXISTS (
-                 SELECT 1 FROM messages m3
+                 SELECT 1 FROM chat_messages m3
                  WHERE m3.session_id = s.session_id
                    AND m3.contenu ILIKE CONCAT('%', :q, '%')
                ))
         """,
             nativeQuery = true
     )
-    Page<SessionSummaryView> searchSummaries(@Param("q") String query, Pageable pageable);
+    Page<SessionSummaryView> searchSummaries(@Param("q") String query,
+                                             @Param("userId") UUID userId,
+                                             @Param("isAdmin") boolean isAdmin,
+                                             Pageable pageable);
+
+    Optional<SessionEntity> findByIdAndUser_Id(Long id, UUID userId);
 }

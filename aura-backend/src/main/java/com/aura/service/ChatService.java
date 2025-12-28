@@ -12,6 +12,8 @@ import com.aura.error.AuraErrorCode;
 import com.aura.error.AuraException;
 import com.aura.repository.MessageRepository;
 import com.aura.repository.SessionRepository;
+import com.aura.security.AuthenticatedUser;
+import com.aura.security.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,17 +28,25 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final OllamaClient ollamaClient;
     private final OllamaProperties properties;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * Creates or reuses a chat session, saves the user message, queries Ollama, saves the assistant message, and returns the result.
      */
     @Transactional
     public ChatResponseDTO chat(ChatRequestDTO request) {
-        SessionEntity session = (request.getSessionId() == null)
-                ? sessionRepository.save(SessionEntity.builder().build())
-                : sessionRepository.findById(request.getSessionId())
-                .orElseThrow(() -> new AuraException(AuraErrorCode.SESSION_NOT_FOUND, "Session not found: " + request.getSessionId()));
+        AuthenticatedUser principal = currentUserProvider.require();
         boolean newSession = (request.getSessionId() == null);
+
+        SessionEntity session;
+        if (newSession) {
+            var user = currentUserProvider.requireEntity();
+            session = sessionRepository.save(SessionEntity.builder()
+                    .user(user)
+                    .build());
+        } else {
+            session = resolveSession(request.getSessionId(), principal);
+        }
 
         MessageEntity userMsg = messageRepository.save(MessageEntity.builder()
                 .author(MessageAuthor.USER)
@@ -67,8 +77,8 @@ public class ChatService {
      */
     @Transactional(readOnly = true)
     public List<MessageDTO> getMessages(Long sessionId) {
-        SessionEntity session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new AuraException(AuraErrorCode.SESSION_NOT_FOUND, "Session not found: " + sessionId));
+        AuthenticatedUser principal = currentUserProvider.require();
+        SessionEntity session = resolveSession(sessionId, principal);
 
         return messageRepository.findBySessionOrderByTimestampAsc(session).stream()
                 .map(m -> MessageDTO.builder()
@@ -78,5 +88,12 @@ public class ChatService {
                         .timestamp(m.getTimestamp())
                         .build())
                 .toList();
+    }
+
+    private SessionEntity resolveSession(Long sessionId, AuthenticatedUser principal) {
+        return (principal.isAdmin()
+                ? sessionRepository.findById(sessionId)
+                : sessionRepository.findByIdAndUser_Id(sessionId, principal.id()))
+                .orElseThrow(() -> new AuraException(AuraErrorCode.SESSION_NOT_FOUND, "Session not found: " + sessionId));
     }
 }

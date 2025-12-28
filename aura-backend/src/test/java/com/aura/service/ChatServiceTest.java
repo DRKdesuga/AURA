@@ -5,6 +5,8 @@ import com.aura.config.OllamaProperties;
 import com.aura.domain.MessageAuthor;
 import com.aura.domain.MessageEntity;
 import com.aura.domain.SessionEntity;
+import com.aura.domain.UserEntity;
+import com.aura.domain.UserRole;
 import com.aura.dto.ChatRequestDTO;
 import com.aura.dto.ChatResponseDTO;
 import com.aura.dto.MessageDTO;
@@ -12,6 +14,8 @@ import com.aura.error.AuraErrorCode;
 import com.aura.error.AuraException;
 import com.aura.repository.MessageRepository;
 import com.aura.repository.SessionRepository;
+import com.aura.security.AuthenticatedUser;
+import com.aura.security.CurrentUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,14 +44,21 @@ class ChatServiceTest {
     @Mock MessageRepository messageRepository;
     @Mock OllamaClient ollamaClient;
     @Mock OllamaProperties properties;
+    @Mock CurrentUserProvider currentUserProvider;
 
     @InjectMocks ChatService chatService;
 
     AtomicLong idGen;
+    UserEntity user;
+    AuthenticatedUser principal;
 
     @BeforeEach
     void setUp() {
         idGen = new AtomicLong(1L);
+        UUID userId = UUID.randomUUID();
+        user = UserEntity.builder().id(userId).email("user@aura.local").role(UserRole.USER).build();
+        principal = new AuthenticatedUser(userId, user.getEmail(), UserRole.USER);
+        when(currentUserProvider.require()).thenReturn(principal);
     }
 
     /**
@@ -56,7 +68,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("chat: creates new session and returns assistant reply")
     void chat_createsNewSession_andReturnsAssistantReply() {
-        SessionEntity persistedSession = SessionEntity.builder().id(42L).build();
+        SessionEntity persistedSession = SessionEntity.builder().id(42L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(persistedSession);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");
@@ -96,8 +109,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("chat: reuses existing session when sessionId provided")
     void chat_usesExistingSession_whenSessionIdProvided() {
-        SessionEntity existing = SessionEntity.builder().id(7L).build();
-        when(sessionRepository.findById(7L)).thenReturn(Optional.of(existing));
+        SessionEntity existing = SessionEntity.builder().id(7L).user(user).build();
+        when(sessionRepository.findByIdAndUser_Id(7L, user.getId())).thenReturn(Optional.of(existing));
 
         when(properties.getSystemPrompt()).thenReturn("SYS2");
         when(ollamaClient.chatOnce(eq("Second"), eq("SYS2"))).thenReturn("Reply 2");
@@ -120,7 +133,7 @@ class ChatServiceTest {
         assertThat(out.getSessionId()).isEqualTo(7L);
         assertThat(out.getAssistantReply()).isEqualTo("Reply 2");
         verify(sessionRepository, never()).save(any());
-        verify(sessionRepository).findById(7L);
+        verify(sessionRepository).findByIdAndUser_Id(7L, user.getId());
     }
 
     /**
@@ -129,7 +142,7 @@ class ChatServiceTest {
     @Test
     @DisplayName("chat: throws when session not found")
     void chat_throws_whenSessionNotFound() {
-        when(sessionRepository.findById(99L)).thenReturn(Optional.empty());
+        when(sessionRepository.findByIdAndUser_Id(eq(99L), any(UUID.class))).thenReturn(Optional.empty());
         ChatRequestDTO req = ChatRequestDTO.builder().sessionId(99L).message("X").build();
 
         assertThatThrownBy(() -> chatService.chat(req))
@@ -147,8 +160,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("getMessages: returns mapped DTOs ordered by timestamp")
     void getMessages_returnsMappedDtos() {
-        SessionEntity s = SessionEntity.builder().id(5L).build();
-        when(sessionRepository.findById(5L)).thenReturn(Optional.of(s));
+        SessionEntity s = SessionEntity.builder().id(5L).user(user).build();
+        when(sessionRepository.findByIdAndUser_Id(eq(5L), any(UUID.class))).thenReturn(Optional.of(s));
 
         MessageEntity m1 = MessageEntity.builder()
                 .id(1L).author(MessageAuthor.USER).content("Hello").timestamp(Instant.parse("2024-01-01T00:00:00Z")).session(s).build();
@@ -172,7 +185,7 @@ class ChatServiceTest {
     @Test
     @DisplayName("getMessages: throws when session not found")
     void getMessages_throws_whenSessionNotFound() {
-        when(sessionRepository.findById(123L)).thenReturn(Optional.empty());
+        when(sessionRepository.findByIdAndUser_Id(eq(123L), any(UUID.class))).thenReturn(Optional.empty());
         assertThatThrownBy(() -> chatService.getMessages(123L))
                 .isInstanceOf(AuraException.class)
                 .extracting("code").isEqualTo(AuraErrorCode.SESSION_NOT_FOUND);
@@ -184,7 +197,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("chat: propagates Ollama failure and saves only the user message")
     void chat_propagatesException_whenOllamaFails() {
-        SessionEntity s = SessionEntity.builder().id(10L).build();
+        SessionEntity s = SessionEntity.builder().id(10L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(s);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");

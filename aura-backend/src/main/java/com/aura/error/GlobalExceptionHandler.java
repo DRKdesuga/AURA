@@ -29,7 +29,9 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (ex.getCode()) {
             case SESSION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case OLLAMA_EMPTY_RESPONSE -> HttpStatus.BAD_GATEWAY;
-            case VALIDATION_ERROR -> HttpStatus.BAD_REQUEST;
+            case VALIDATION_ERROR, USER_ALREADY_EXISTS, AUTH_INVALID_CREDENTIALS -> HttpStatus.BAD_REQUEST;
+            case AUTH_REFRESH_INVALID, AUTH_REFRESH_REVOKED, AUTH_REFRESH_EXPIRED -> HttpStatus.UNAUTHORIZED;
+            case FORBIDDEN -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         ErrorResponse body = ErrorResponse.builder()
@@ -38,6 +40,16 @@ public class GlobalExceptionHandler {
                 .timestamp(Instant.now())
                 .build();
         return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        ErrorResponse body = ErrorResponse.builder()
+                .code(AuraErrorCode.VALIDATION_ERROR.name())
+                .message(ex.getMessage())
+                .timestamp(Instant.now())
+                .build();
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(Exception.class)
