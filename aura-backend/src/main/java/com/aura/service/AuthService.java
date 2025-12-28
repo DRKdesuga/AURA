@@ -24,9 +24,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CurrentUserProvider currentUserProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
-    public AuthResponseDTO register(RegisterRequestDTO request) {
+    public AuthTokens register(RegisterRequestDTO request, String userAgent, String ipAddress) {
         String email = request.getEmail().toLowerCase(Locale.ROOT);
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new AuraException(AuraErrorCode.USER_ALREADY_EXISTS, "Email already in use");
@@ -42,17 +43,19 @@ public class AuthService {
                 .enabled(true)
                 .build();
         UserEntity saved = userRepository.save(user);
-        return toAuthResponse(saved);
+        String refreshToken = refreshTokenService.issue(saved, userAgent, ipAddress);
+        return new AuthTokens(toAuthResponse(saved, jwtService.generateToken(saved)), refreshToken);
     }
 
-    @Transactional(readOnly = true)
-    public AuthResponseDTO login(LoginRequestDTO request) {
+    @Transactional
+    public AuthTokens login(LoginRequestDTO request, String userAgent, String ipAddress) {
         UserEntity user = userRepository.findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new AuraException(AuraErrorCode.AUTH_INVALID_CREDENTIALS, "Invalid credentials"));
         if (!user.isEnabled() || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new AuraException(AuraErrorCode.AUTH_INVALID_CREDENTIALS, "Invalid credentials");
         }
-        return toAuthResponse(user);
+        String refreshToken = refreshTokenService.issue(user, userAgent, ipAddress);
+        return new AuthTokens(toAuthResponse(user, jwtService.generateToken(user)), refreshToken);
     }
 
     @Transactional(readOnly = true)
@@ -63,9 +66,27 @@ public class AuthService {
         return toUserResponse(user);
     }
 
-    private AuthResponseDTO toAuthResponse(UserEntity user) {
+    @Transactional
+    public AuthTokens refresh(String refreshToken, String userAgent, String ipAddress) {
+        RefreshTokenService.RefreshResult result = refreshTokenService.refresh(refreshToken, userAgent, ipAddress);
+        AuthResponseDTO response = toAuthResponse(result.user(), result.accessToken());
+        return new AuthTokens(response, result.refreshToken());
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenService.revoke(refreshToken);
+    }
+
+    @Transactional
+    public int logoutAll() {
+        UserEntity user = currentUserProvider.requireEntity();
+        return refreshTokenService.revokeAll(user.getId());
+    }
+
+    private AuthResponseDTO toAuthResponse(UserEntity user, String accessToken) {
         return AuthResponseDTO.builder()
-                .accessToken(jwtService.generateToken(user))
+                .accessToken(accessToken)
                 .user(toUserResponse(user))
                 .build();
     }
@@ -79,5 +100,8 @@ public class AuthService {
                 .enabled(user.isEnabled())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    public record AuthTokens(AuthResponseDTO response, String refreshToken) {
     }
 }

@@ -30,6 +30,7 @@ public class GlobalExceptionHandler {
             case SESSION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case OLLAMA_EMPTY_RESPONSE -> HttpStatus.BAD_GATEWAY;
             case VALIDATION_ERROR, USER_ALREADY_EXISTS, AUTH_INVALID_CREDENTIALS -> HttpStatus.BAD_REQUEST;
+            case AUTH_REFRESH_INVALID, AUTH_REFRESH_REVOKED, AUTH_REFRESH_EXPIRED -> HttpStatus.UNAUTHORIZED;
             case FORBIDDEN -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
