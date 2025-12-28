@@ -1,0 +1,85 @@
+<om-dark-veil>
+  <div class="content">
+    <div class="title-block">
+      <om-typewriter
+        [words]="['Welcome to AURA']"
+        [writeDelay]="500"
+        [writeSpeed]="100"
+        styleClass="typewriter-large">
+      </om-typewriter>
+      <p class="subtitle">Accédez à votre espace AURA en toute sérénité.</p>
+    </div>
+
+    <form class="auth-card" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="vous@exemple.com"
+          [disabled]="pending()"
+          autocomplete="email"
+          spellcheck="false" />
+      </div>
+      <div class="error" *ngIf="emailCtrl.invalid && (emailCtrl.dirty || emailCtrl.touched)">
+        <span *ngIf="emailCtrl.errors?.['required']">L'email est requis.</span>
+        <span *ngIf="emailCtrl.errors?.['email']">Format d'email invalide.</span>
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Minimum 8 caractères"
+          [disabled]="pending()"
+          autocomplete="current-password" />
+      </div>
+      <div class="error" *ngIf="passwordCtrl.invalid && (passwordCtrl.dirty || passwordCtrl.touched)">
+        <span *ngIf="passwordCtrl.errors?.['required']">Le mot de passe est requis.</span>
+        <span *ngIf="passwordCtrl.errors?.['minlength']">8 caractères minimum.</span>
+      </div>
+
+      <div class="field" *ngIf="registerMode()">
+        <label for="confirmPassword">Confirmer le mot de passe</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          placeholder="Répétez le mot de passe"
+          [disabled]="pending()"
+          autocomplete="new-password" />
+      </div>
+      <div
+        class="error"
+        *ngIf="
+          registerMode() &&
+          (confirmCtrl.dirty || confirmCtrl.touched) &&
+          (confirmCtrl.errors?.['required'] || form.errors?.['passwordMismatch'])
+        ">
+        <span *ngIf="confirmCtrl.errors?.['required']">La confirmation est requise.</span>
+        <span *ngIf="form.errors?.['passwordMismatch']">Les mots de passe ne correspondent pas.</span>
+      </div>
+
+      <div class="status" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+      <div class="actions">
+        <button
+          type="submit"
+          class="primary"
+          [disabled]="pending() || form.invalid">
+          {{ pending() ? 'Chargement...' : (registerMode() ? "S'inscrire" : 'Se connecter') }}
+        </button>
+        <button
+          type="button"
+          class="ghost"
+          (click)="toggleMode()"
+          [disabled]="pending()">
+          {{ registerMode() ? 'Se connecter' : "S'inscrire" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</om-dark-veil>
