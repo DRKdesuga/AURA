@@ -59,7 +59,6 @@ class ChatServiceTest {
         user = UserEntity.builder().id(userId).email("user@aura.local").role(UserRole.USER).build();
         principal = new AuthenticatedUser(userId, user.getEmail(), UserRole.USER);
         when(currentUserProvider.require()).thenReturn(principal);
-        when(currentUserProvider.requireEntity()).thenReturn(user);
     }
 
     /**
@@ -70,6 +69,7 @@ class ChatServiceTest {
     @DisplayName("chat: creates new session and returns assistant reply")
     void chat_createsNewSession_andReturnsAssistantReply() {
         SessionEntity persistedSession = SessionEntity.builder().id(42L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(persistedSession);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");
@@ -109,10 +109,8 @@ class ChatServiceTest {
     @Test
     @DisplayName("chat: reuses existing session when sessionId provided")
     void chat_usesExistingSession_whenSessionIdProvided() {
-        AuthenticatedUser admin = new AuthenticatedUser(UUID.randomUUID(), "admin@aura.local", UserRole.ADMIN);
-        when(currentUserProvider.require()).thenReturn(admin);
         SessionEntity existing = SessionEntity.builder().id(7L).user(user).build();
-        when(sessionRepository.findById(7L)).thenReturn(Optional.of(existing));
+        when(sessionRepository.findByIdAndUser_Id(7L, user.getId())).thenReturn(Optional.of(existing));
 
         when(properties.getSystemPrompt()).thenReturn("SYS2");
         when(ollamaClient.chatOnce(eq("Second"), eq("SYS2"))).thenReturn("Reply 2");
@@ -135,7 +133,7 @@ class ChatServiceTest {
         assertThat(out.getSessionId()).isEqualTo(7L);
         assertThat(out.getAssistantReply()).isEqualTo("Reply 2");
         verify(sessionRepository, never()).save(any());
-        verify(sessionRepository).findById(7L);
+        verify(sessionRepository).findByIdAndUser_Id(7L, user.getId());
     }
 
     /**
@@ -200,6 +198,7 @@ class ChatServiceTest {
     @DisplayName("chat: propagates Ollama failure and saves only the user message")
     void chat_propagatesException_whenOllamaFails() {
         SessionEntity s = SessionEntity.builder().id(10L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(s);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");
