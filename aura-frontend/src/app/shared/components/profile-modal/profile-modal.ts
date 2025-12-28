@@ -48,7 +48,7 @@ export class ProfileModal {
 
   onLogout(): void {
     if (this.loggingOut()) return;
-    const ok = confirm('Se déconnecter ?');
+    const ok = confirm('Sign out?');
     if (!ok) return;
 
     this.loggingOut.set(true);

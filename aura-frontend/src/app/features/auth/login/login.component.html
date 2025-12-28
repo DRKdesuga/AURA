@@ -5,9 +5,11 @@
         [words]="['Welcome to AURA']"
         [writeDelay]="500"
         [writeSpeed]="100"
+        [disableLoop]="true"
+        [deleteDelay]="1000000"
         styleClass="typewriter-large">
       </om-typewriter>
-      <p class="subtitle">Accédez à votre espace AURA en toute sérénité.</p>
+      <p class="subtitle">Access your AURA space with confidence.</p>
     </div>
 
     <form class="auth-card" [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -17,38 +19,38 @@
           id="email"
           type="email"
           formControlName="email"
-          placeholder="vous@exemple.com"
+          placeholder="you@example.com"
           [disabled]="pending()"
           autocomplete="email"
           spellcheck="false" />
       </div>
       <div class="error" *ngIf="emailCtrl.invalid && (emailCtrl.dirty || emailCtrl.touched)">
-        <span *ngIf="emailCtrl.errors?.['required']">L'email est requis.</span>
-        <span *ngIf="emailCtrl.errors?.['email']">Format d'email invalide.</span>
+        <span *ngIf="emailCtrl.errors?.['required']">Email is required.</span>
+        <span *ngIf="emailCtrl.errors?.['email']">Invalid email format.</span>
       </div>
 
       <div class="field">
-        <label for="password">Mot de passe</label>
+        <label for="password">Password</label>
         <input
           id="password"
           type="password"
           formControlName="password"
-          placeholder="Minimum 8 caractères"
+          placeholder="Minimum 8 characters"
           [disabled]="pending()"
           autocomplete="current-password" />
       </div>
       <div class="error" *ngIf="passwordCtrl.invalid && (passwordCtrl.dirty || passwordCtrl.touched)">
-        <span *ngIf="passwordCtrl.errors?.['required']">Le mot de passe est requis.</span>
-        <span *ngIf="passwordCtrl.errors?.['minlength']">8 caractères minimum.</span>
+        <span *ngIf="passwordCtrl.errors?.['required']">Password is required.</span>
+        <span *ngIf="passwordCtrl.errors?.['minlength']">At least 8 characters.</span>
       </div>
 
       <div class="field" *ngIf="registerMode()">
-        <label for="confirmPassword">Confirmer le mot de passe</label>
+        <label for="confirmPassword">Confirm password</label>
         <input
           id="confirmPassword"
           type="password"
           formControlName="confirmPassword"
-          placeholder="Répétez le mot de passe"
+          placeholder="Repeat the password"
           [disabled]="pending()"
           autocomplete="new-password" />
       </div>
@@ -59,8 +61,8 @@
           (confirmCtrl.dirty || confirmCtrl.touched) &&
           (confirmCtrl.errors?.['required'] || form.errors?.['passwordMismatch'])
         ">
-        <span *ngIf="confirmCtrl.errors?.['required']">La confirmation est requise.</span>
-        <span *ngIf="form.errors?.['passwordMismatch']">Les mots de passe ne correspondent pas.</span>
+        <span *ngIf="confirmCtrl.errors?.['required']">Confirmation is required.</span>
+        <span *ngIf="form.errors?.['passwordMismatch']">Passwords do not match.</span>
       </div>
 
       <div class="status" *ngIf="errorMessage()">{{ errorMessage() }}</div>
@@ -70,14 +72,14 @@
           type="submit"
           class="primary"
           [disabled]="pending() || form.invalid">
-          {{ pending() ? 'Chargement...' : (registerMode() ? "S'inscrire" : 'Se connecter') }}
+          {{ pending() ? 'Loading...' : (registerMode() ? 'Sign up' : 'Sign in') }}
         </button>
         <button
           type="button"
           class="ghost"
           (click)="toggleMode()"
           [disabled]="pending()">
-          {{ registerMode() ? 'Se connecter' : "S'inscrire" }}
+          {{ registerMode() ? 'Sign in' : 'Sign up' }}
         </button>
       </div>
     </form>

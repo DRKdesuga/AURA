@@ -129,13 +129,13 @@ export class LoginComponent {
         (message.includes('already') || message.includes('exist') || message.includes('used')));
 
     if (isRegister && emailAlreadyUsed) {
-      return 'Cet email est déjà utilisé';
+      return 'This email is already in use.';
     }
 
     if (!isRegister && anyErr?.status === 401) {
-      return 'Email ou mot de passe incorrect.';
+      return 'Incorrect email or password.';
     }
 
-    return 'Une erreur est survenue. Veuillez réessayer.';
+    return 'Something went wrong. Please try again.';
   }
 }

@@ -2,7 +2,7 @@
 
 <div class="modal" *ngIf="open" role="dialog" aria-modal="true" aria-label="Profile settings">
   <header>
-    <h3>Personnalisation</h3>
+    <h3>Personalization</h3>
     <button class="icon" type="button" (click)="close.emit()" aria-label="Close">✕</button>
   </header>
 
@@ -40,13 +40,13 @@
 
   <section class="danger-zone">
     <h4>Session</h4>
-    <p>Déconnectez-vous de cet appareil en toute sécurité.</p>
+    <p>Sign out of this device safely.</p>
     <button
       class="btn danger"
       type="button"
       (click)="onLogout()"
       [disabled]="loggingOut()">
-      {{ loggingOut() ? 'Déconnexion...' : 'Déconnexion' }}
+      {{ loggingOut() ? 'Signing out...' : 'Sign out' }}
     </button>
   </section>
 

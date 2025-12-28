@@ -23,6 +23,8 @@ om-dark-veil {
   gap: 2.5rem;
   padding: 2rem;
   text-align: center;
+  position: relative;
+  z-index: 1;
   animation: fadeIn 0.8s ease-out;
 }
 
