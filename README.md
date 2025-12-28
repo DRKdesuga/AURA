@@ -192,6 +192,7 @@ curl -s "http://localhost:8080/api/sessions?q=&page=0&size=30" | jq
 
 ## 🖼️ Screenshots
 
+![Sample Output](README_SRC/login.png)
 ![Sample Output](README_SRC/screen1.png)
 ![Sample Output](README_SRC/screen2.png)
 ![Sample Output](README_SRC/math.png)
