@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, ElementRef } from '@angular/core';
+import { Component, Input, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
@@ -35,16 +35,24 @@ function setupMarked() {
   templateUrl: './markdown-viewer.html',
   styleUrl: './markdown-viewer.scss'
 })
-export class MarkdownViewer implements OnChanges {
-  @Input() content = '';
+export class MarkdownViewer {
+  private _content = '';
+  @Input()
+  set content(value: string) {
+    this._content = value ?? '';
+    this.renderMarkdown();
+  }
+  get content(): string {
+    return this._content;
+  }
   html = '';
 
   constructor(private host: ElementRef<HTMLElement>) {
     setupMarked();
   }
 
-  ngOnChanges(_: SimpleChanges): void {
-    const parsed = marked.parse(this.content ?? '');
+  private renderMarkdown(): void {
+    const parsed = marked.parse(this._content);
     const safe = DOMPurify.sanitize(String(parsed));
     this.html = safe;
     queueMicrotask(() => this.attachCopyButtons());
@@ -80,7 +88,8 @@ export class MarkdownViewer implements OnChanges {
 
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const code = preEl.querySelector('code')?.textContent ?? '';
+        const code =
+          (preEl.querySelector('code')?.textContent ?? '').replace(/\n$/, '');
         try {
           await navigator.clipboard.writeText(code);
           btn.classList.add('ok');

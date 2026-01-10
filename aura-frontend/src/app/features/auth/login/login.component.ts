@@ -68,13 +68,17 @@ export class LoginComponent {
 
   onSubmit(): void {
     this.errorMessage.set('');
+    const trimmedEmail = (this.emailCtrl.value as string | null)?.trim() ?? '';
+    if (trimmedEmail !== this.emailCtrl.value) {
+      this.emailCtrl.setValue(trimmedEmail, { emitEvent: false });
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     const isRegister = this.registerMode();
-    const email = (this.emailCtrl.value as string).trim();
+    const email = trimmedEmail;
     const password = this.passwordCtrl.value as string;
 
     if (isRegister && this.form.errors?.['passwordMismatch']) {
