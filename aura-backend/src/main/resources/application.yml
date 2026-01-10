@@ -40,3 +40,9 @@ ollama:
   system-prompt: >
     You are AURA, the internal assistant. Answer concisely and clearly in English.
     If you are unsure about something, say so explicitly.
+
+aura:
+  context:
+    window-size-messages: 16
+    memory-update-every-messages: 10
+    max-prompt-chars: 24000

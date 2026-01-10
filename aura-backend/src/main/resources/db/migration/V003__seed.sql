@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
     user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     date_debut TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     date_fin   TIMESTAMPTZ,
-    title      VARCHAR(200)
+    title      VARCHAR(200),
+    memory_json TEXT,
+    summary_text TEXT,
+    last_memory_message_id BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS chat_messages (

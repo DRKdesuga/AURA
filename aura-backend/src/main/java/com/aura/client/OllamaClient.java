@@ -45,4 +45,28 @@ public class OllamaClient {
         }
         return resp.getMessage().getContent();
     }
+
+    /**
+     * Sends a multi-turn chat request to Ollama and returns the assistant reply.
+     */
+    public String chatWithMessages(List<ChatMessage> messages) {
+        ChatRequest body = ChatRequest.builder()
+                .model(props.getModel())
+                .stream(false)
+                .messages(messages)
+                .build();
+
+        ChatResponse resp = ollamaRestClient.post()
+                .uri("/api/chat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(ChatResponse.class);
+
+        if (resp == null || resp.getMessage() == null || resp.getMessage().getContent() == null) {
+            throw new AuraException(AuraErrorCode.OLLAMA_EMPTY_RESPONSE, "Empty response from Ollama");
+        }
+        return resp.getMessage().getContent();
+    }
 }

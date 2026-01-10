@@ -1,6 +1,7 @@
 package com.aura.service;
 
 import com.aura.client.OllamaClient;
+import com.aura.config.AuraContextProperties;
 import com.aura.config.OllamaProperties;
 import com.aura.domain.MessageAuthor;
 import com.aura.domain.MessageEntity;
@@ -29,6 +30,9 @@ public class ChatService {
     private final OllamaClient ollamaClient;
     private final OllamaProperties properties;
     private final CurrentUserProvider currentUserProvider;
+    private final AuraContextProperties contextProperties;
+    private final ChatContextService chatContextService;
+    private final MemoryUpdateService memoryUpdateService;
 
     /**
      * Creates or reuses a chat session, saves the user message, queries Ollama, saves the assistant message, and returns the result.
@@ -54,13 +58,17 @@ public class ChatService {
                 .session(session)
                 .build());
 
-        String answer = ollamaClient.chatOnce(request.getMessage(), properties.getSystemPrompt());
+        String answer = ollamaClient.chatWithMessages(
+                chatContextService.buildContextMessages(session, userMsg, properties.getSystemPrompt())
+        );
 
         MessageEntity botMsg = messageRepository.save(MessageEntity.builder()
                 .author(MessageAuthor.ASSISTANT)
                 .content(answer)
                 .session(session)
                 .build());
+
+        updateSessionMemoryIfNeeded(session);
 
         return ChatResponseDTO.builder()
                 .sessionId(session.getId())
@@ -95,5 +103,31 @@ public class ChatService {
                 ? sessionRepository.findById(sessionId)
                 : sessionRepository.findByIdAndUser_Id(sessionId, principal.id()))
                 .orElseThrow(() -> new AuraException(AuraErrorCode.SESSION_NOT_FOUND, "Session not found: " + sessionId));
+    }
+
+    private void updateSessionMemoryIfNeeded(SessionEntity session) {
+        int threshold = contextProperties.getMemoryUpdateEveryMessages();
+        if (threshold <= 0) {
+            return;
+        }
+        List<MessageEntity> newMessages = loadMessagesSinceLastMemory(session);
+        if (newMessages.size() < threshold) {
+            return;
+        }
+        MemoryUpdateResult result = memoryUpdateService.updateMemory(session, newMessages);
+        if (result.updated()) {
+            session.setMemoryJson(result.memoryJson());
+            MessageEntity last = newMessages.get(newMessages.size() - 1);
+            session.setLastMemoryMessageId(last.getId());
+            sessionRepository.save(session);
+        }
+    }
+
+    private List<MessageEntity> loadMessagesSinceLastMemory(SessionEntity session) {
+        Long lastMemoryMessageId = session.getLastMemoryMessageId();
+        if (lastMemoryMessageId == null) {
+            return messageRepository.findBySessionOrderByIdAsc(session);
+        }
+        return messageRepository.findBySessionAndIdGreaterThanOrderByIdAsc(session, lastMemoryMessageId);
     }
 }

@@ -1,6 +1,7 @@
 package com.aura.service;
 
 import com.aura.client.OllamaClient;
+import com.aura.config.AuraContextProperties;
 import com.aura.config.OllamaProperties;
 import com.aura.domain.MessageAuthor;
 import com.aura.domain.MessageEntity;
@@ -10,6 +11,7 @@ import com.aura.domain.UserRole;
 import com.aura.dto.ChatRequestDTO;
 import com.aura.dto.ChatResponseDTO;
 import com.aura.dto.MessageDTO;
+import com.aura.dto.OllamaDtos.ChatMessage;
 import com.aura.error.AuraErrorCode;
 import com.aura.error.AuraException;
 import com.aura.repository.MessageRepository;
@@ -45,6 +47,9 @@ class ChatServiceTest {
     @Mock OllamaClient ollamaClient;
     @Mock OllamaProperties properties;
     @Mock CurrentUserProvider currentUserProvider;
+    @Mock AuraContextProperties contextProperties;
+    @Mock ChatContextService chatContextService;
+    @Mock MemoryUpdateService memoryUpdateService;
 
     @InjectMocks ChatService chatService;
 
@@ -73,7 +78,13 @@ class ChatServiceTest {
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(persistedSession);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");
-        when(ollamaClient.chatOnce(eq("Hi"), eq("SYS"))).thenReturn("Hello from Ollama");
+        List<ChatMessage> contextMessages = List.of(
+                ChatMessage.builder().role("system").content("SYS").build(),
+                ChatMessage.builder().role("user").content("Hi").build()
+        );
+        when(chatContextService.buildContextMessages(eq(persistedSession), any(MessageEntity.class), eq("SYS")))
+                .thenReturn(contextMessages);
+        when(ollamaClient.chatWithMessages(contextMessages)).thenReturn("Hello from Ollama");
 
         when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
             MessageEntity in = inv.getArgument(0);
@@ -99,7 +110,7 @@ class ChatServiceTest {
         InOrder order = inOrder(sessionRepository, messageRepository, ollamaClient, messageRepository);
         order.verify(sessionRepository).save(any(SessionEntity.class));
         order.verify(messageRepository).save(argThat(m -> m.getAuthor() == MessageAuthor.USER && "Hi".equals(m.getContent())));
-        order.verify(ollamaClient).chatOnce("Hi", "SYS");
+        order.verify(ollamaClient).chatWithMessages(contextMessages);
         order.verify(messageRepository).save(argThat(m -> m.getAuthor() == MessageAuthor.ASSISTANT && "Hello from Ollama".equals(m.getContent())));
     }
 
@@ -113,7 +124,13 @@ class ChatServiceTest {
         when(sessionRepository.findByIdAndUser_Id(7L, user.getId())).thenReturn(Optional.of(existing));
 
         when(properties.getSystemPrompt()).thenReturn("SYS2");
-        when(ollamaClient.chatOnce(eq("Second"), eq("SYS2"))).thenReturn("Reply 2");
+        List<ChatMessage> contextMessages = List.of(
+                ChatMessage.builder().role("system").content("SYS2").build(),
+                ChatMessage.builder().role("user").content("Second").build()
+        );
+        when(chatContextService.buildContextMessages(eq(existing), any(MessageEntity.class), eq("SYS2")))
+                .thenReturn(contextMessages);
+        when(ollamaClient.chatWithMessages(contextMessages)).thenReturn("Reply 2");
 
         when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
             MessageEntity in = inv.getArgument(0);
@@ -151,7 +168,7 @@ class ChatServiceTest {
                 .extracting("code").isEqualTo(AuraErrorCode.SESSION_NOT_FOUND);
 
         verify(messageRepository, never()).save(any());
-        verify(ollamaClient, never()).chatOnce(anyString(), anyString());
+        verify(ollamaClient, never()).chatWithMessages(anyList());
     }
 
     /**
@@ -202,7 +219,13 @@ class ChatServiceTest {
         when(sessionRepository.save(any(SessionEntity.class))).thenReturn(s);
 
         when(properties.getSystemPrompt()).thenReturn("SYS");
-        when(ollamaClient.chatOnce(anyString(), anyString()))
+        List<ChatMessage> contextMessages = List.of(
+                ChatMessage.builder().role("system").content("SYS").build(),
+                ChatMessage.builder().role("user").content("Ping").build()
+        );
+        when(chatContextService.buildContextMessages(eq(s), any(MessageEntity.class), eq("SYS")))
+                .thenReturn(contextMessages);
+        when(ollamaClient.chatWithMessages(anyList()))
                 .thenThrow(new AuraException(AuraErrorCode.OLLAMA_UNREACHABLE, "down"));
 
         when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
@@ -227,5 +250,52 @@ class ChatServiceTest {
         MessageEntity saved = captor.getValue();
         assertThat(saved.getAuthor()).isEqualTo(MessageAuthor.USER);
         verify(messageRepository, never()).save(argThat(m -> m.getAuthor() == MessageAuthor.ASSISTANT));
+    }
+
+    /**
+     * Verifies that memory is updated when enough new messages have accumulated.
+     */
+    @Test
+    @DisplayName("chat: updates memory when threshold reached")
+    void chat_updatesMemory_whenThresholdReached() {
+        SessionEntity persistedSession = SessionEntity.builder().id(44L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
+        when(sessionRepository.save(any(SessionEntity.class))).thenReturn(persistedSession);
+        when(contextProperties.getMemoryUpdateEveryMessages()).thenReturn(2);
+
+        when(properties.getSystemPrompt()).thenReturn("SYS");
+        List<ChatMessage> contextMessages = List.of(
+                ChatMessage.builder().role("system").content("SYS").build(),
+                ChatMessage.builder().role("user").content("Hi").build()
+        );
+        when(chatContextService.buildContextMessages(eq(persistedSession), any(MessageEntity.class), eq("SYS")))
+                .thenReturn(contextMessages);
+        when(ollamaClient.chatWithMessages(contextMessages)).thenReturn("Hello");
+
+        when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
+            MessageEntity in = inv.getArgument(0);
+            return MessageEntity.builder()
+                    .id(idGen.getAndIncrement())
+                    .author(in.getAuthor())
+                    .content(in.getContent())
+                    .timestamp(Instant.now())
+                    .session(in.getSession())
+                    .build();
+        });
+
+        List<MessageEntity> messagesForMemory = List.of(
+                MessageEntity.builder().id(1L).author(MessageAuthor.USER).content("Hi").session(persistedSession).build(),
+                MessageEntity.builder().id(2L).author(MessageAuthor.ASSISTANT).content("Hello").session(persistedSession).build()
+        );
+        when(messageRepository.findBySessionOrderByIdAsc(persistedSession)).thenReturn(messagesForMemory);
+        when(memoryUpdateService.updateMemory(persistedSession, messagesForMemory))
+                .thenReturn(MemoryUpdateResult.updated("{\"facts\":[\"x\"]}"));
+
+        ChatRequestDTO req = ChatRequestDTO.builder().sessionId(null).message("Hi").build();
+        chatService.chat(req);
+
+        assertThat(persistedSession.getMemoryJson()).isEqualTo("{\"facts\":[\"x\"]}");
+        assertThat(persistedSession.getLastMemoryMessageId()).isEqualTo(2L);
+        verify(memoryUpdateService).updateMemory(persistedSession, messagesForMemory);
     }
 }
