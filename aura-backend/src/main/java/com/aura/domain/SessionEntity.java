@@ -31,6 +31,15 @@ public class SessionEntity {
     @Column(name = "title", length = 200)
     private String title;
 
+    @Column(name = "memory_json", columnDefinition = "TEXT")
+    private String memoryJson;
+
+    @Column(name = "summary_text", columnDefinition = "TEXT")
+    private String summaryText;
+
+    @Column(name = "last_memory_message_id")
+    private Long lastMemoryMessageId;
+
     @PrePersist
     void onCreate() {
         if (startDate == null) startDate = Instant.now();
