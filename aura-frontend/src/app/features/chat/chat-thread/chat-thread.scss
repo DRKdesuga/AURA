@@ -6,6 +6,11 @@
   padding: 12px;
 }
 
+:host-context(.drag-active) .thread {
+  border-color: rgba(111,157,255,.35);
+  box-shadow: 0 0 0 1px rgba(111,157,255,.15), 0 0 18px rgba(90,79,255,.15);
+}
+
 /* Empty state*/
 .empty {
   height: 100%;
@@ -41,4 +46,3 @@
 :host ::ng-deep .md p,
 :host ::ng-deep .md ul,
 :host ::ng-deep .md ol { margin: .35rem 0; }
-

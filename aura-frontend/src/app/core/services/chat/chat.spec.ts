@@ -61,6 +61,32 @@ describe('ChatService', () => {
     expect(errorStatus).toBe(404);
   });
 
+  it('posts multipart form data when sending a file', () => {
+    // Arrange
+    const file = new File(['%PDF-1.4'], 'guide.pdf', { type: 'application/pdf' });
+    const response = {
+      sessionId: 2,
+      userMessageId: 3,
+      assistantMessageId: 4,
+      assistantReply: 'Done',
+      timestamp: 'now',
+      newSession: false
+    };
+
+    // Act
+    service.chatWithFile({ sessionId: 2, message: 'Hi', file }).subscribe();
+    const req = httpMock.expectOne('http://localhost/api/chat/with-file');
+
+    // Assert
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body instanceof FormData).toBeTrue();
+    const body = req.request.body as FormData;
+    expect(body.get('message')).toBe('Hi');
+    expect(body.get('sessionId')).toBe('2');
+    expect(body.get('file')).toBe(file);
+    req.flush(response);
+  });
+
   it('gets messages for a session', () => {
     // Arrange
     const response = [{ id: 1, author: 'USER', content: 'Hello', timestamp: 'now' }];

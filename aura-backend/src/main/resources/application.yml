@@ -46,3 +46,14 @@ aura:
     window-size-messages: 16
     memory-update-every-messages: 10
     max-prompt-chars: 24000
+  chat:
+    pdf:
+      max-file-size-mb: 25
+      max-pages: 200
+      parse-timeout-seconds: 10
+      max-extracted-chars: 200000
+      direct-inject-max-chars: 12000
+      chunk-size-chars: 1200
+      chunk-overlap-chars: 120
+      top-k: 6
+      min-chunk-score-threshold: 0.0

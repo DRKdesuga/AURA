@@ -36,7 +36,7 @@ describe('ChatInput', () => {
 
   it('emits trimmed message on submit and clears input', () => {
     // Arrange
-    let emitted: string | undefined;
+    let emitted: { message: string; file: File | null } | undefined;
     component.send.subscribe(value => (emitted = value));
 
     component.valueSig.set('  hello  ');
@@ -49,7 +49,7 @@ describe('ChatInput', () => {
     fixture.detectChanges();
 
     // Assert
-    expect(emitted).toBe('hello');
+    expect(emitted).toEqual({ message: 'hello', file: null });
     expect(component.valueSig()).toBe('');
   });
 
@@ -68,5 +68,78 @@ describe('ChatInput', () => {
 
     // Assert
     expect(emitted).toBeFalse();
+  });
+
+  it('shows the attachment button and triggers the file picker', () => {
+    // Arrange
+    const button = fixture.nativeElement.querySelector('button.attach') as HTMLButtonElement;
+    const input = fixture.nativeElement.querySelector('input.file-input') as HTMLInputElement;
+    spyOn(input, 'click');
+
+    // Act
+    button.click();
+
+    // Assert
+    expect(input.click).toHaveBeenCalled();
+  });
+
+  it('adds a PDF attachment and displays a chip', () => {
+    // Arrange
+    const file = new File(['%PDF-1.4'], 'guide.pdf', { type: 'application/pdf' });
+    const input = fixture.nativeElement.querySelector('input.file-input') as HTMLInputElement;
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    Object.defineProperty(input, 'files', { value: dataTransfer.files });
+
+    // Act
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    // Assert
+    const chip = fixture.nativeElement.querySelector('.attachment-chip') as HTMLElement;
+    expect(chip).toBeTruthy();
+    expect(chip.textContent).toContain('guide.pdf');
+  });
+
+  it('removes an attachment when the remove button is clicked', () => {
+    // Arrange
+    const file = new File(['%PDF-1.4'], 'guide.pdf', { type: 'application/pdf' });
+    const input = fixture.nativeElement.querySelector('input.file-input') as HTMLInputElement;
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    Object.defineProperty(input, 'files', { value: dataTransfer.files });
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const remove = fixture.nativeElement.querySelector('.attachment-remove') as HTMLButtonElement;
+
+    // Act
+    remove.click();
+    fixture.detectChanges();
+
+    // Assert
+    expect(fixture.nativeElement.querySelector('.attachment-chip')).toBeNull();
+  });
+
+  it('rejects non-PDF files and shows an error message', () => {
+    // Arrange
+    const file = new File(['Hello'], 'note.txt', { type: 'text/plain' });
+    const input = fixture.nativeElement.querySelector('input.file-input') as HTMLInputElement;
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    Object.defineProperty(input, 'files', { value: dataTransfer.files });
+
+    // Act
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    // Assert
+    expect(fixture.nativeElement.querySelector('.attachment-chip')).toBeNull();
+    const error = fixture.nativeElement.querySelector('.attachment-error') as HTMLElement;
+    expect(error).toBeTruthy();
+    expect(error.textContent).toContain('Only PDF');
   });
 });

@@ -29,9 +29,11 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (ex.getCode()) {
             case SESSION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case OLLAMA_EMPTY_RESPONSE -> HttpStatus.BAD_GATEWAY;
-            case VALIDATION_ERROR, USER_ALREADY_EXISTS, AUTH_INVALID_CREDENTIALS -> HttpStatus.BAD_REQUEST;
+            case VALIDATION_ERROR, USER_ALREADY_EXISTS, AUTH_INVALID_CREDENTIALS,
+                 INVALID_FILE_TYPE, PDF_ENCRYPTED, PDF_TOO_MANY_PAGES, PDF_PARSE_FAILED -> HttpStatus.BAD_REQUEST;
             case AUTH_REFRESH_INVALID, AUTH_REFRESH_REVOKED, AUTH_REFRESH_EXPIRED -> HttpStatus.UNAUTHORIZED;
             case FORBIDDEN -> HttpStatus.FORBIDDEN;
+            case FILE_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         ErrorResponse body = ErrorResponse.builder()
