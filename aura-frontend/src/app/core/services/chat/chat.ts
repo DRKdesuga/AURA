@@ -15,6 +15,14 @@ export class ChatService {
     return this.http.post<ChatResponse>(`${this.cfg.apiBaseUrl}/api/chat`, body);
   }
 
+  chatWithFile(payload: { message: string; sessionId: number | null; file: File | null }): Observable<ChatResponse> {
+    const formData = new FormData();
+    formData.append('message', payload.message);
+    if (payload.sessionId != null) formData.append('sessionId', String(payload.sessionId));
+    if (payload.file) formData.append('file', payload.file);
+    return this.http.post<ChatResponse>(`${this.cfg.apiBaseUrl}/api/chat/with-file`, formData);
+  }
+
   getMessages(sessionId: number): Observable<Message[]> {
     return this.http.get<Message[]>(`${this.cfg.apiBaseUrl}/api/chat/session/${sessionId}/messages`);
   }

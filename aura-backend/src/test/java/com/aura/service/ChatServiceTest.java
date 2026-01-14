@@ -3,6 +3,7 @@ package com.aura.service;
 import com.aura.client.OllamaClient;
 import com.aura.config.AuraContextProperties;
 import com.aura.config.OllamaProperties;
+import com.aura.config.PdfChatProperties;
 import com.aura.domain.MessageAuthor;
 import com.aura.domain.MessageEntity;
 import com.aura.domain.SessionEntity;
@@ -18,6 +19,12 @@ import com.aura.repository.MessageRepository;
 import com.aura.repository.SessionRepository;
 import com.aura.security.AuthenticatedUser;
 import com.aura.security.CurrentUserProvider;
+import com.aura.service.pdf.LexicalRetriever;
+import com.aura.service.pdf.PdfPromptBuilder;
+import com.aura.service.pdf.PdfTextExtractor;
+import com.aura.service.pdf.ScoredChunk;
+import com.aura.service.pdf.TextChunk;
+import com.aura.service.pdf.TextChunker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,9 +33,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +61,11 @@ class ChatServiceTest {
     @Mock AuraContextProperties contextProperties;
     @Mock ChatContextService chatContextService;
     @Mock MemoryUpdateService memoryUpdateService;
+    @Mock PdfTextExtractor pdfTextExtractor;
+    @Mock TextChunker textChunker;
+    @Mock LexicalRetriever lexicalRetriever;
+    @Spy PdfPromptBuilder pdfPromptBuilder = new PdfPromptBuilder();
+    @Spy PdfChatProperties pdfChatProperties = new PdfChatProperties();
 
     @InjectMocks ChatService chatService;
 
@@ -64,6 +80,7 @@ class ChatServiceTest {
         user = UserEntity.builder().id(userId).email("user@aura.local").role(UserRole.USER).build();
         principal = new AuthenticatedUser(userId, user.getEmail(), UserRole.USER);
         when(currentUserProvider.require()).thenReturn(principal);
+        pdfChatProperties.setDirectInjectMaxChars(12000);
     }
 
     /**
@@ -297,5 +314,129 @@ class ChatServiceTest {
         assertThat(persistedSession.getMemoryJson()).isEqualTo("{\"facts\":[\"x\"]}");
         assertThat(persistedSession.getLastMemoryMessageId()).isEqualTo(2L);
         verify(memoryUpdateService).updateMemory(persistedSession, messagesForMemory);
+    }
+
+    /**
+     * Verifies that small extracted text is injected directly into the prompt with untrusted instructions.
+     */
+    @Test
+    @DisplayName("chatWithFile: direct injects small extracted text")
+    void chatWithFile_directInjectsSmallText() {
+        SessionEntity persistedSession = SessionEntity.builder().id(101L).user(user).build();
+        when(currentUserProvider.requireEntity()).thenReturn(user);
+        when(sessionRepository.save(any(SessionEntity.class))).thenReturn(persistedSession);
+        when(properties.getSystemPrompt()).thenReturn("SYS");
+
+        String extractedText = "Small PDF content.";
+        when(pdfTextExtractor.extractText(any())).thenReturn(extractedText);
+
+        List<ChatMessage> contextMessages = new ArrayList<>(List.of(
+                ChatMessage.builder().role("system").content("SYS").build(),
+                ChatMessage.builder().role("user").content("placeholder").build()
+        ));
+        when(chatContextService.buildContextMessages(eq(persistedSession), any(MessageEntity.class), eq("SYS")))
+                .thenReturn(contextMessages);
+
+        when(ollamaClient.chatWithMessages(anyList())).thenReturn("Answer");
+        when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
+            MessageEntity in = inv.getArgument(0);
+            return MessageEntity.builder()
+                    .id(idGen.getAndIncrement())
+                    .author(in.getAuthor())
+                    .content(in.getContent())
+                    .timestamp(Instant.now())
+                    .session(in.getSession())
+                    .build();
+        });
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "doc.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        ChatResponseDTO out = chatService.chatWithFile(null, "Summarize this", file);
+
+        ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
+        verify(ollamaClient).chatWithMessages(captor.capture());
+        String prompt = captor.getValue().getLast().getContent();
+        assertThat(prompt).contains("untrusted");
+        assertThat(prompt).contains(extractedText);
+        assertThat(prompt).contains("Summarize this");
+        assertThat(out.getAssistantReply()).isEqualTo("Answer");
+        verify(messageRepository).save(argThat(m -> m.getAuthor() == MessageAuthor.USER));
+        verify(messageRepository).save(argThat(m -> m.getAuthor() == MessageAuthor.ASSISTANT));
+    }
+
+    /**
+     * Verifies that large extracted text uses retrieval and only selected chunks appear in the prompt.
+     */
+    @Test
+    @DisplayName("chatWithFile: uses top chunks for large text")
+    void chatWithFile_usesTopChunksForLargeText() {
+        pdfChatProperties.setDirectInjectMaxChars(5);
+        pdfChatProperties.setTopK(1);
+
+        SessionEntity existing = SessionEntity.builder().id(55L).user(user).build();
+        when(sessionRepository.findByIdAndUser_Id(55L, user.getId())).thenReturn(Optional.of(existing));
+        when(properties.getSystemPrompt()).thenReturn("SYS");
+
+        String extractedText = "FULL_TEXT_SHOULD_NOT_APPEAR";
+        when(pdfTextExtractor.extractText(any())).thenReturn(extractedText);
+
+        List<TextChunk> chunks = List.of(
+                new TextChunk(0, "CHUNK_ALPHA"),
+                new TextChunk(1, "CHUNK_BETA")
+        );
+        when(textChunker.chunk(eq(extractedText), anyInt(), anyInt())).thenReturn(chunks);
+        List<ScoredChunk> selected = List.of(new ScoredChunk(chunks.get(1), 1.5));
+        when(lexicalRetriever.retrieveTopChunks(eq("Find beta"), eq(chunks), eq(1), anyDouble()))
+                .thenReturn(selected);
+
+        List<ChatMessage> contextMessages = new ArrayList<>(List.of(
+                ChatMessage.builder().role("system").content("SYS").build(),
+                ChatMessage.builder().role("user").content("placeholder").build()
+        ));
+        when(chatContextService.buildContextMessages(eq(existing), any(MessageEntity.class), eq("SYS")))
+                .thenReturn(contextMessages);
+
+        when(ollamaClient.chatWithMessages(anyList())).thenReturn("Done");
+        when(messageRepository.save(any(MessageEntity.class))).thenAnswer(inv -> {
+            MessageEntity in = inv.getArgument(0);
+            return MessageEntity.builder()
+                    .id(idGen.getAndIncrement())
+                    .author(in.getAuthor())
+                    .content(in.getContent())
+                    .timestamp(Instant.now())
+                    .session(in.getSession())
+                    .build();
+        });
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "doc.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        chatService.chatWithFile(55L, "Find beta", file);
+
+        ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass(List.class);
+        verify(ollamaClient).chatWithMessages(captor.capture());
+        String prompt = captor.getValue().getLast().getContent();
+        assertThat(prompt).contains("CHUNK_BETA");
+        assertThat(prompt).doesNotContain("CHUNK_ALPHA");
+        assertThat(prompt).doesNotContain(extractedText);
+        assertThat(prompt).contains("untrusted");
+    }
+
+    /**
+     * Verifies that invalid file types propagate as domain exceptions.
+     */
+    @Test
+    @DisplayName("chatWithFile: throws on invalid file type")
+    void chatWithFile_throwsOnInvalidFileType() {
+        SessionEntity existing = SessionEntity.builder().id(88L).user(user).build();
+        when(sessionRepository.findByIdAndUser_Id(88L, user.getId())).thenReturn(Optional.of(existing));
+        when(pdfTextExtractor.extractText(any())).thenThrow(new AuraException(
+                AuraErrorCode.INVALID_FILE_TYPE, "Only PDF files are supported"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "doc.txt", MediaType.TEXT_PLAIN_VALUE, "text".getBytes());
+
+        assertThatThrownBy(() -> chatService.chatWithFile(88L, "Hello", file))
+                .isInstanceOf(AuraException.class)
+                .extracting("code").isEqualTo(AuraErrorCode.INVALID_FILE_TYPE);
     }
 }

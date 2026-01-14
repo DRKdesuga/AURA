@@ -6,7 +6,13 @@
     </app-sessions-sidebar>
   </aside>
 
-  <main class="main">
+  <main
+    class="main"
+    [class.drag-active]="dragActive()"
+    (dragenter)="onDragEnter($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)">
     <app-chat-header
       [sidebarHidden]="sidebarHidden()"
       (toggleSidebar)="toggleSidebar()">
@@ -17,6 +23,8 @@
       [typing]="typing()">
     </app-chat-thread>
 
-    <app-chat-input (send)="onSendMessage($event)"></app-chat-input>
+    <app-chat-input
+      [sending]="fileSending()"
+      (send)="onSendMessage($event)"></app-chat-input>
   </main>
 </div>

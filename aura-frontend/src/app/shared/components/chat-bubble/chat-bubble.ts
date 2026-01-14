@@ -18,4 +18,17 @@ export class ChatBubble {
 
   @HostBinding('class.user') get isUser() { return this.message?.author === 'USER'; }
   @HostBinding('class.assistant') get isAssistant() { return this.message?.author === 'ASSISTANT'; }
+
+  formatBytes(bytes: number): string {
+    if (!Number.isFinite(bytes)) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+    const precision = size >= 10 || unitIndex === 0 ? 0 : 1;
+    return `${size.toFixed(precision)} ${units[unitIndex]}`;
+  }
 }

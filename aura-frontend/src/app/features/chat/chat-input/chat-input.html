@@ -1,12 +1,36 @@
 <div class="dock">
+  <div class="attachment-area" *ngIf="attachmentPreviews().length || error()">
+    <div class="attachment-row" *ngIf="attachmentPreviews().length">
+      <div class="attachment-chip" *ngFor="let attachment of attachmentPreviews(); let i = index">
+        <div class="attachment-details">
+          <span class="attachment-name">{{ attachment.name }}</span>
+          <span class="attachment-size">{{ attachment.sizeLabel }}</span>
+        </div>
+        <button
+          class="attachment-remove"
+          type="button"
+          (click)="removeAttachment(i)"
+          aria-label="Remove attachment">x</button>
+      </div>
+    </div>
+    <div class="attachment-error" *ngIf="error()">{{ error() }}</div>
+  </div>
+
   <form class="composer" (ngSubmit)="onSubmit()">
+    <button
+      class="attach"
+      type="button"
+      (click)="openFilePicker()"
+      [disabled]="sending"
+      aria-label="Add attachment">+</button>
+
     <textarea
       #ta
       class="text"
       rows="1"
       name="message"
       [ngModelOptions]="{ standalone: true }"
-      [disabled]="disabled"
+      [disabled]="disabled || sending"
       [ngModel]="valueSig()"
       (ngModelChange)="onType($event)"
       (input)="onInput()"
@@ -19,6 +43,16 @@
       type="submit"
       [disabled]="!ready()"
       [class.glow]="ready()"
-      aria-label="Send">➤</button>
+      aria-label="Send">
+      <span class="send-icon" *ngIf="!sending">➤</span>
+      <span class="spinner" *ngIf="sending"></span>
+    </button>
   </form>
+
+  <input
+    #fileInput
+    class="file-input"
+    type="file"
+    accept="application/pdf,.pdf"
+    (change)="onFileSelected($event)">
 </div>
